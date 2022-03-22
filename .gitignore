@@ -1,0 +1,5 @@
+# VS code configuration files
+.vscode/*
+
+# Netscript Definitions for reference only
+NetscriptDefinitions.d.ts
