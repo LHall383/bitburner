@@ -3,3 +3,6 @@
 
 # Netscript Definitions for reference only
 NetscriptDefinitions.d.ts
+
+# For testing of new mechanics only
+scripts/test.js
