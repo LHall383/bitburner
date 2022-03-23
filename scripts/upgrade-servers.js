@@ -5,12 +5,12 @@ export async function main(ns) {
     ["target", "n00dles"],
     ["minRam", 4],
     ["maxRam", ns.getPurchasedServerMaxRam()],
+    ["budget", 0.8],
   ]);
 
   // some constants
   const scriptName = "/scripts/basic-hack.js";
   const scriptRam = ns.getScriptRam(scriptName);
-  const percentBudget = 0.2;
 
   // loop through with increasing amounts of ram
   for (let ram = args["minRam"]; ram <= args["maxRam"]; ram *= 2) {
@@ -28,12 +28,12 @@ export async function main(ns) {
       if (sRam >= ram) continue;
 
       // wait for the money
-      while (ns.getServerMoneyAvailable("home") * percentBudget <= cost) {
+      while (ns.getServerMoneyAvailable("home") * args["budget"] <= cost) {
         ns.printf(
           "Waiting for money to upgrade '%s'. Will spend $%s at $%s",
           s,
           cost.toLocaleString("en-US"),
-          (cost / percentBudget).toLocaleString("en-US")
+          (cost / args["budget"]).toLocaleString("en-US")
         );
         await ns.sleep(10000);
       }
@@ -55,4 +55,7 @@ export async function main(ns) {
     ns.print(`All servers up to ${ram} ram`);
     await ns.sleep(1);
   }
+
+  ns.print("Finished upgrading servers!");
+  ns.toast("Finished upgrading servers!", "info", 5000);
 }

@@ -1,7 +1,10 @@
 /** @param {NS} ns */
 export async function main(ns) {
   // parse command line args
-  const args = ns.flags([["target", "n00dles"]]);
+  const args = ns.flags([
+    ["target", "n00dles"],
+    ["upgrade", false],
+  ]);
 
   // some constants
   const ram = 4;
@@ -33,5 +36,12 @@ export async function main(ns) {
     let threads = Math.floor(ramAvailable / scriptRam);
     ns.exec(scriptName, server, threads, "--target", args["target"]);
     ns.print("Started " + threads + " threads of hack on server: " + server);
+  }
+
+  ns.print("Finished purchasing servers!");
+  ns.toast("Finished purchasing servers!", "info", 5000);
+
+  if (args["upgrade"]) {
+    ns.spawn("/scripts/upgrade-servers.js", 1, "--target", args["target"]);
   }
 }
