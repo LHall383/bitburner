@@ -49,6 +49,7 @@ export async function main(ns) {
       // start maximum number of threads running script
       ns.exec(scriptName, s, threads, "--target", args["target"]);
       ns.print("Started " + threads + " threads of hack on server: " + s);
+      ns.toast(`Upgraded ${s} to ${ram} RAM`, "info");
     }
 
     // wait to not freeze
