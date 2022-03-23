@@ -1,9 +1,9 @@
 const basicHackScript = "/scripts/basic-hack.js";
-const files = [
-  "/scripts/basic/hack.js",
-  "/scripts/basic/weaken.js",
-  "/scripts/basic/grow.js",
-];
+const files = {
+  hack: "/scripts/basic/hack.js",
+  weaken: "/scripts/basic/weaken.js",
+  grow: "/scripts/basic/grow.js",
+};
 
 /** @param {NS} ns */
 export async function main(ns) {
@@ -20,7 +20,7 @@ export async function main(ns) {
 
   // calc RAM used by script
   let scriptRam = ns.getScriptRam(basicHackScript);
-  let simpleScriptRam = ns.getScriptRam(files[0]);
+  let simpleScriptRam = ns.getScriptRam(files["grow"]);
 
   // start scripts on each server in list
   for (const server of serverList) {
@@ -73,9 +73,9 @@ export async function main(ns) {
 
     // copy script to server
     await ns.scp(basicHackScript, server);
-    await ns.scp(files[0], server);
-    await ns.scp(files[1], server);
-    await ns.scp(files[2], server);
+    await ns.scp(files["grow"], server);
+    await ns.scp(files["hack"], server);
+    await ns.scp(files["weaken"], server);
 
     if (args["basic"]) {
       // start threads for each simple script
@@ -88,13 +88,34 @@ export async function main(ns) {
         `Starting basic hack threads ${threadsH}H, ${threadsW}W, ${threadsG}G`
       );
       if (threadsH > 0) {
-        ns.exec(files[0], server, threadsH, "--target", args["target"]);
+        ns.exec(
+          files["hack"],
+          server,
+          threadsH,
+          "--target",
+          args["target"],
+          "--loop"
+        );
       }
       if (threadsW > 0) {
-        ns.exec(files[1], server, threadsW, "--target", args["target"]);
+        ns.exec(
+          files["weaken"],
+          server,
+          threadsW,
+          "--target",
+          args["target"],
+          "--loop"
+        );
       }
       if (threadsG > 0) {
-        ns.exec(files[2], server, threadsG, "--target", args["target"]);
+        ns.exec(
+          files["grow"],
+          server,
+          threadsG,
+          "--target",
+          args["target"],
+          "--loop"
+        );
       }
     } else {
       // start maximum number of threads running script

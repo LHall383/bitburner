@@ -3,7 +3,7 @@ import { connectToSever } from "./modules/helper.js";
 /** @param {NS} ns */
 export async function main(ns) {
   ns.tprintf(
-    "Purchase: buy BruteSSH.exe; buy FTPCrack.exe; buy relaySMTP.exe; buy HTTPWorm.exe; buy SQLInject.exe; buy ServerProfiler.exe; buy DeepscanV1.exe; buy DeepscanV2.exe; buy AutoLink.exe; buy Formulas.exe; buy -l;"
+    "Purchase:      buy BruteSSH.exe; buy FTPCrack.exe; buy relaySMTP.exe; buy HTTPWorm.exe; buy SQLInject.exe; buy ServerProfiler.exe; buy DeepscanV1.exe; buy DeepscanV2.exe; buy AutoLink.exe; buy Formulas.exe; buy -l;"
   );
 
   let toCSEC = await connectToSever(ns, "CSEC");
