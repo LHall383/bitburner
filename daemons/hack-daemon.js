@@ -1,3 +1,5 @@
+import { getStats } from "./modules/helper.js";
+
 function printServerStats(ns, server) {
   let stats = ns.getServer(server);
 
@@ -28,18 +30,22 @@ export async function main(ns) {
     ["target", "joesguns"],
     ["ramBudget", 0.8],
     ["loop", false],
-    ["starterHost", "home"],
+    ["starterHost", undefined],
     ["hosts", ["pserv-0", "pserv-1"]],
   ]);
+  const starterHost = args["starterHost"] ?? args["hosts"][0];
+
   const delayTime = 100;
   const weakenSecurityEffect = 0.05;
   const growSecurityEffect = 0.004;
   const hackSecurityEffect = 0.002;
   const scheduleBufferTime = 500;
   const executeBufferTime = 100;
-  let targetStats = ns.getServer(args["target"]);
-  let starterHostStats = ns.getServer(args["starterHost"]);
-  let playerStats = ns.getPlayer();
+  let stats = getStats(ns, true, [
+    args["target"],
+    starterHost,
+    ...args["hosts"],
+  ]);
 
   // we do our own logging
   ns.disableLog("ALL");
@@ -48,22 +54,22 @@ export async function main(ns) {
   // copy scripts to hosts
   const hackScript = {
     name: "/scripts/basic/hack.js",
-    ram: ns.getScriptRam("/scripts/basic/hack.js", args["starterHost"]),
+    ram: ns.getScriptRam("/scripts/basic/hack.js", "home"),
   };
   const growScript = {
     name: "/scripts/basic/grow.js",
-    ram: ns.getScriptRam("/scripts/basic/grow.js", args["starterHost"]),
+    ram: ns.getScriptRam("/scripts/basic/grow.js", "home"),
   };
   const weakenScript = {
     name: "/scripts/basic/weaken.js",
-    ram: ns.getScriptRam("/scripts/basic/weaken.js", args["starterHost"]),
+    ram: ns.getScriptRam("/scripts/basic/weaken.js", "home"),
   };
   const scripts = [hackScript, growScript, weakenScript];
-  ns.print("Copying scripts to host");
+  ns.print("Copying scripts to hosts");
   await ns.scp(
     scripts.map((s) => s.name),
     "home",
-    args["starterHost"]
+    starterHost
   );
   for (const host of args["hosts"]) {
     await ns.scp(
@@ -74,14 +80,16 @@ export async function main(ns) {
   }
 
   // grow target to max money (while keeping security low)
-  targetStats = ns.getServer(args["target"]);
-  starterHostStats = ns.getServer(args["starterHost"]);
-  playerStats = ns.getPlayer();
+  stats = getStats(ns, true, [args["target"], starterHost, ...args["hosts"]]);
   ns.print("Growing target to maximum money while keeping security low");
-  while (targetStats.moneyAvailable < targetStats.moneyMax) {
+  while (
+    stats.servers[args["target"]].moneyAvailable <
+    stats.servers[args["target"]].moneyMax
+  ) {
     printServerStats(ns, args["target"]);
     let ramToUse =
-      (starterHostStats.maxRam - starterHostStats.ramUsed) * args["ramBudget"];
+      (stats.servers[starterHost].maxRam - stats.servers[starterHost].ramUsed) *
+      args["ramBudget"];
     let wThreads = Math.floor(ramToUse / weakenScript.ram);
     let gThreads = Math.floor(ramToUse / growScript.ram);
     ns.print(`Will use ${ramToUse}GB host ram.`);
@@ -89,13 +97,17 @@ export async function main(ns) {
 
     // if weaken will have full effect weaken, otherwise continue to grow server
     if (
-      targetStats.hackDifficulty - weakenSecurityEffect * wThreads >
-      targetStats.minDifficulty
+      stats.servers[args["target"]].hackDifficulty -
+        weakenSecurityEffect * wThreads >
+      stats.servers[args["target"]].minDifficulty
     ) {
-      let wTime = ns.formulas.hacking.weakenTime(targetStats, playerStats);
+      let wTime = ns.formulas.hacking.weakenTime(
+        stats.servers[args["target"]],
+        stats.player
+      );
       ns.exec(
         weakenScript.name,
-        args["starterHost"],
+        starterHost,
         wThreads,
         "--target",
         args["target"]
@@ -110,42 +122,48 @@ export async function main(ns) {
       );
       await ns.sleep(Math.ceil(wTime + delayTime));
     } else {
-      let gTime = ns.formulas.hacking.growTime(targetStats, playerStats);
+      let gTime = ns.formulas.hacking.growTime(
+        stats.servers[args["target"]],
+        stats.player
+      );
       ns.exec(
         growScript.name,
-        args["starterHost"],
+        starterHost,
         gThreads,
         "--target",
         args["target"]
       );
       ns.print(`Growing server with ${gThreads} threads`);
       ns.print(
-        `Sleeping ${Math.ceil(wTime + delayTime)}ms until grow is finished`
+        `Sleeping ${Math.ceil(gTime + delayTime)}ms until grow is finished`
       );
       await ns.sleep(Math.ceil(gTime + delayTime));
     }
 
-    targetStats = ns.getServer(args["target"]);
-    starterHostStats = ns.getServer(args["starterHost"]);
-    playerStats = ns.getPlayer();
+    stats = getStats(ns, true, [args["target"], starterHost, ...args["hosts"]]);
   }
   ns.print("-----Target at maximum money-----");
   printServerStats(ns, args["target"]);
 
   // reduce target to minimum security level
   ns.print("Reducing target to minimum security");
-  targetStats = ns.getServer(args["target"]);
-  starterHostStats = ns.getServer(args["starterHost"]);
-  playerStats = ns.getPlayer();
-  while (targetStats.hackDifficulty > targetStats.minDifficulty) {
+  stats = getStats(ns, true, [args["target"], starterHost, ...args["hosts"]]);
+  while (
+    stats.servers[args["target"]].hackDifficulty >
+    stats.servers[args["target"]].minDifficulty
+  ) {
     let ramToUse =
-      (starterHostStats.maxRam - starterHostStats.ramUsed) * args["ramBudget"];
+      (stats.servers[starterHost].maxRam - stats.servers[starterHost].ramUsed) *
+      args["ramBudget"];
     let wThreads = Math.floor(ramToUse / weakenScript.ram);
-    let weakenTime = ns.formulas.hacking.weakenTime(targetStats, playerStats);
+    let weakenTime = ns.formulas.hacking.weakenTime(
+      stats.servers[args["target"]],
+      stats.player
+    );
 
     ns.exec(
       weakenScript.name,
-      args["starterHost"],
+      starterHost,
       wThreads,
       "--target",
       args["target"]
@@ -160,9 +178,7 @@ export async function main(ns) {
     );
     await ns.sleep(Math.ceil(weakenTime + delayTime));
 
-    targetStats = ns.getServer(args["target"]);
-    starterHostStats = ns.getServer(args["starterHost"]);
-    playerStats = ns.getPlayer();
+    stats = getStats(ns, true, [args["target"], starterHost, ...args["hosts"]]);
   }
   ns.print("-----Target at minimum security-----");
   printServerStats(ns, args["target"]);
@@ -170,12 +186,10 @@ export async function main(ns) {
   // HWGW cycle
   do {
     // update stats
-    targetStats = ns.getServer(args["target"]);
-    starterHostStats = ns.getServer(args["starterHost"]);
-    playerStats = ns.getPlayer();
+    stats = getStats(ns, true, [args["target"], starterHost, ...args["hosts"]]);
 
     // find max ram chunk
-    const hostsStats = args["hosts"].map((h) => ns.getServer(h));
+    const hostsStats = args["hosts"].map((h) => stats.servers[h]);
     hostsStats.sort((a, b) => b.maxRam - b.ramUsed - (a.maxRam - a.ramUsed));
     const maxRamChunk = hostsStats[0].maxRam - hostsStats[0].ramUsed;
     ns.print(`Hosts: ${args["hosts"]}.`);
@@ -185,11 +199,14 @@ export async function main(ns) {
 
     // calc grow effect for max ram
     const gThreads = Math.floor(maxRamChunk / growScript.ram);
-    const gTime = ns.formulas.hacking.growTime(targetStats, playerStats);
+    const gTime = ns.formulas.hacking.growTime(
+      stats.servers[args["target"]],
+      stats.player
+    );
     const gPercent = ns.formulas.hacking.growPercent(
-      targetStats,
+      stats.servers[args["target"]],
       gThreads,
-      playerStats,
+      stats.player,
       1
     );
 
@@ -197,11 +214,14 @@ export async function main(ns) {
     const hPercent = 1 - 1 / gPercent;
     const hThreads = Math.floor(
       ns.hackAnalyzeThreads(
-        targetStats.hostname,
-        targetStats.moneyMax * hPercent
+        stats.servers[args["target"]].hostname,
+        stats.servers[args["target"]].moneyMax * hPercent
       )
     );
-    const hTime = ns.formulas.hacking.hackTime(targetStats, playerStats);
+    const hTime = ns.formulas.hacking.hackTime(
+      stats.servers[args["target"]],
+      stats.player
+    );
 
     // find threads of weaken to offset hack and grow
     const hOffsetThreads = Math.ceil(
@@ -210,7 +230,10 @@ export async function main(ns) {
     const gOffsetThreads = Math.ceil(
       (growSecurityEffect * gThreads) / weakenSecurityEffect
     );
-    const wTime = ns.formulas.hacking.weakenTime(targetStats, playerStats);
+    const wTime = ns.formulas.hacking.weakenTime(
+      stats.servers[args["target"]],
+      stats.player
+    );
 
     // output stats about jobs
     ns.print(
@@ -244,40 +267,40 @@ export async function main(ns) {
     const startWeaken2Time = endHackTime + executeBufferTime * 3 - wTime;
     const scheduledJobs = [
       {
-        name: `hack ${targetStats.hostname}`,
+        name: `hack ${stats.servers[args["target"]].hostname}`,
         scriptName: hackScript.name,
         startTime: startHackTime,
         duration: hTime,
         threads: hThreads,
-        target: targetStats.hostname,
-        host: "pserv-1",
+        target: stats.servers[args["target"]].hostname,
+        host: args["hosts"][1],
       },
       {
-        name: `weaken1 ${targetStats.hostname}`,
+        name: `weaken1 ${stats.servers[args["target"]].hostname}`,
         scriptName: weakenScript.name,
         startTime: startWeaken1Time,
         duration: wTime,
         threads: hOffsetThreads,
-        target: targetStats.hostname,
-        host: "pserv-1",
+        target: stats.servers[args["target"]].hostname,
+        host: args["hosts"][1],
       },
       {
-        name: `grow ${targetStats.hostname}`,
+        name: `grow ${stats.servers[args["target"]].hostname}`,
         scriptName: growScript.name,
         startTime: startGrowTime,
         duration: gTime,
         threads: gThreads,
-        target: targetStats.hostname,
-        host: "pserv-0",
+        target: stats.servers[args["target"]].hostname,
+        host: args["hosts"][0],
       },
       {
-        name: `weaken2 ${targetStats.hostname}`,
+        name: `weaken2 ${stats.servers[args["target"]].hostname}`,
         scriptName: weakenScript.name,
         startTime: startWeaken2Time,
         duration: wTime,
         threads: gOffsetThreads,
-        target: targetStats.hostname,
-        host: "pserv-1",
+        target: stats.servers[args["target"]].hostname,
+        host: args["hosts"][1],
       },
     ];
 
@@ -315,8 +338,11 @@ export async function main(ns) {
     await sleepUntil(ns, endHackTime);
     for (let i = 0; i < 5; i++) {
       await sleepUntil(ns, endHackTime + executeBufferTime * i);
-      printServerStats(ns, targetStats.hostname);
+      printServerStats(ns, stats.servers[args["target"]].hostname);
     }
+
+    // padding with sleep, sometimes we go too quickly
+    await ns.sleep(scheduleBufferTime);
 
     // TODO: calc how many targets we can effectively hack
   } while (args["loop"]);

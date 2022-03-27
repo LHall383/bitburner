@@ -7,7 +7,7 @@ export async function main(ns) {
   ]);
 
   // some constants
-  const ram = 4;
+  const ram = 8;
   const scriptName = "/scripts/basic-hack.js";
   const scriptRam = ns.getScriptRam(scriptName);
 
@@ -40,6 +40,14 @@ export async function main(ns) {
 
   ns.print("Finished purchasing servers!");
   ns.toast("Finished purchasing servers!", "info", 5000);
+  let p1Handle = ns.getPortHandle(1);
+  p1Handle.tryWrite(
+    JSON.stringify({
+      source: "purchase-servers",
+      exiting: true,
+      message: `purchase-servers exiting`,
+    })
+  );
 
   if (args["upgrade"]) {
     ns.spawn("/scripts/upgrade-servers.js", 1, "--target", args["target"]);

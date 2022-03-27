@@ -59,4 +59,12 @@ export async function main(ns) {
 
   ns.print("Finished upgrading servers!");
   ns.toast("Finished upgrading servers!", "info", 5000);
+  let p1Handle = ns.getPortHandle(1);
+  p1Handle.tryWrite(
+    JSON.stringify({
+      source: "upgrade-servers",
+      exiting: true,
+      message: `upgrade-servers exiting`,
+    })
+  );
 }

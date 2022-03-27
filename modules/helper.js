@@ -41,3 +41,14 @@ export async function connectToSever(
 
   return path;
 }
+
+export function getStats(ns, player = true, servers = []) {
+  const stats = { player: undefined, servers: {} };
+  if (player) {
+    stats.player = ns.getPlayer();
+  }
+  servers.forEach((s) => {
+    if (ns.serverExists(s)) stats.servers[s] = ns.getServer(s);
+  });
+  return stats;
+}

@@ -27,12 +27,27 @@ export async function main(ns) {
     }
 
     if (portLimit > lastPortLimit) {
+      let p1Handle = ns.getPortHandle(1);
+      p1Handle.tryWrite(
+        JSON.stringify({
+          source: "continuous-deploy",
+          message: `continuous-deploy launching deploy hack with ${portLimit} ports open`,
+        })
+      );
       ns.exec(scriptName, "home", 1, "--target", args["target"]);
     }
 
-    await ns.sleep(10000);
+    await ns.sleep(1000);
     lastPortLimit = portLimit;
   }
 
   ns.print("Port limit reached, no longer need to deploy");
+  let p1Handle = ns.getPortHandle(1);
+  p1Handle.tryWrite(
+    JSON.stringify({
+      source: "continuous-deploy",
+      exiting: true,
+      message: `continuous-deploy exiting`,
+    })
+  );
 }
