@@ -6,9 +6,12 @@ export async function main(ns) {
     ["loop", false],
   ]);
 
+  // continuously deploy hack script as we acquire new port cracking programs
   ns.exec("scripts/continuous-deploy.js", "home", 1, "--target", "n00dles");
   ns.print("Launched continuous-deploy");
+  await ns.sleep(1000);
 
+  // purchase private servers when we have the money, upgrade them after all are purchased
   ns.exec(
     "scripts/purchase-servers.js",
     "home",
@@ -18,24 +21,12 @@ export async function main(ns) {
     "--upgrade"
   );
   ns.print("Launched purchase-servers");
+  await ns.sleep(1000);
 
-  // const serverLimit = ns.getPurchasedServerLimit();
-  // const maxServerRam = ns.getPurchasedServerMaxRam();
-
-  // let hasUpgraded = false;
+  // main loop
   do {
-    // check if we need to upgrade servers
-    // if (!hasUpgraded) {
-    //   let servers = ns.getPurchasedServers();
-    //   if (
-    //     servers.length >= serverLimit &&
-    //     ns.getServerMaxRam(servers[servers.length - 1]) < maxServerRam
-    //   ) {
-    //     ns.exec("scripts/upgrade-servers.js", "home", 1, "--target", "n00dles");
-    //     ns.print("Launched upgrade-servers");
-    //     hasUpgraded = true;
-    //   }
-    // }
+    // TODO: use pservs for hack daemon rather than basic hack
+    // run daemons/hack-daemon.js --target joesguns --loop --ramBudget 0.80 --hosts pserv-0 pserv-1
 
     await ns.sleep(1000);
   } while (args["loop"]);
