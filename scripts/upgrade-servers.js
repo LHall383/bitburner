@@ -8,15 +8,21 @@ export async function main(ns) {
     ["budget", 0.8],
   ]);
 
+  ns.disableLog("ALL");
+  ns.print("----------Staring upgrade servers----------");
+
   // some constants
   const scriptName = "/scripts/basic-hack.js";
   const scriptRam = ns.getScriptRam(scriptName);
+  const maxMinutesPerLevel = 10;
 
   // loop through with increasing amounts of ram
   for (let ram = args["minRam"]; ram <= args["maxRam"]; ram *= 2) {
     let threads = Math.floor(ram / scriptRam);
     let cost = ns.getPurchasedServerCost(ram);
     ns.print(`Upgrading to ${ram} ram. Running ${threads} threads.`);
+
+    let startTime = Date.now();
 
     // loop through purchased servers and upgrade them to the provided amount of ram
     let servers = ns.getPurchasedServers();
@@ -28,13 +34,19 @@ export async function main(ns) {
       if (sRam >= ram) continue;
 
       // wait for the money
+      ns.printf(
+        "Waiting for money to upgrade '%s'. Will spend $%s at $%s",
+        s,
+        cost.toLocaleString("en-US"),
+        (cost / args["budget"]).toLocaleString("en-US")
+      );
+      let time = Date.now() - startTime;
+      ns.print(
+        `Has spent ${(time / 1000 / 60).toFixed(
+          2
+        )} minutes upgrading to ${ram} so far`
+      );
       while (ns.getServerMoneyAvailable("home") * args["budget"] <= cost) {
-        ns.printf(
-          "Waiting for money to upgrade '%s'. Will spend $%s at $%s",
-          s,
-          cost.toLocaleString("en-US"),
-          (cost / args["budget"]).toLocaleString("en-US")
-        );
         await ns.sleep(10000);
       }
 
@@ -51,9 +63,17 @@ export async function main(ns) {
       ns.print("Started " + threads + " threads of hack on server: " + s);
       ns.toast(`Upgraded ${s} to ${ram} RAM`, "info");
     }
-
-    // wait to not freeze
     ns.print(`All servers up to ${ram} ram`);
+
+    // if it takes too long to upgrade, lets stop here
+    let endTime = Date.now();
+    if (endTime - startTime > maxMinutesPerLevel * 60 * 1000) {
+      ns.print(
+        `Took longer than ${maxMinutesPerLevel} minutes to upgrade to this level, stopping upgrades here.`
+      );
+      break;
+    }
+
     await ns.sleep(1);
   }
 
