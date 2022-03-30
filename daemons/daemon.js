@@ -5,6 +5,7 @@ let flags = {
   purchasedServers: false,
   launchedUpgrades: false,
   upgradedServers: false,
+  launchedCorpDaemon: false,
 };
 
 function handleP1Message(ns, message) {
@@ -45,7 +46,7 @@ function handleP1Message(ns, message) {
 /** @param {NS} ns */
 export async function main(ns) {
   // parse command line args
-  const args = ns.flags([["loop", false]]);
+  const args = ns.flags([["loop", true]]);
 
   // we do our own logging
   ns.disableLog("ALL");
@@ -134,7 +135,7 @@ export async function main(ns) {
           t.hostname,
           "--loop",
           "--ramBudget",
-          0.95,
+          1.0,
           "--hosts",
           host1,
           "--hosts",
@@ -146,6 +147,16 @@ export async function main(ns) {
         hackTargets.shift();
       }
     }
+
+    // if we have a corporation, launch the corp-daemon to manage it
+    if (stats.player.hasCorporation && !flags.launchedCorpDaemon) {
+      ns.exec("daemons/corp-daemon.js", "home", 1, "--loop");
+      flags.launchedCorpDaemon = true;
+      ns.print("Launching corp-daemon");
+    }
+
+    // TODO: share pserv-0 if we aren't using it
+    // scp scripts/basic/share.js pserv-0; connect pserv-0; killall; run scripts/basic/share.js -t 256 --loop; home
 
     await ns.sleep(100);
   } while (args["loop"]);
