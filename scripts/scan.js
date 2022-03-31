@@ -29,16 +29,16 @@ export async function main(ns) {
       }
     }
 
-    ns.tprint(connectedList);
+    ns.print(connectedList);
     serverList.push(connectedList);
   }
 
   // flatten server list into normal array
-  let flattened = serverList.slice(1).join();
-  ns.tprint(JSON.stringify(flattened));
+  let flattened = serverList.join();
+  ns.print(JSON.stringify(flattened));
 
   // output server list to file
-  ns.tprint(serverList);
+  ns.print(serverList);
   await ns.write("/data/server-list.txt", JSON.stringify(serverList), "w");
   await ns.write("/data/flattened-list.txt", JSON.stringify(flattened), "w");
 }

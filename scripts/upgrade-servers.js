@@ -18,16 +18,30 @@ export async function main(ns) {
 
   // loop through with increasing amounts of ram
   for (let ram = args["minRam"]; ram <= args["maxRam"]; ram *= 2) {
-    let threads = Math.floor(ram / scriptRam);
-    let cost = ns.getPurchasedServerCost(ram);
+    const servers = ns.getPurchasedServers();
+    const threads = Math.floor(ram / scriptRam);
+    const cost = ns.getPurchasedServerCost(ram);
     ns.print(`Upgrading to ${ram} ram. Running ${threads} threads.`);
 
-    let startTime = Date.now();
+    // if it will take too long to upgrade all servers, exit now
+    const [income, incomeSinceAugment] = ns.getScriptIncome();
+    const upgradeLevelCost = cost * servers.length;
+    const earnedIncome = income * maxMinutesPerLevel * 60;
+    if (upgradeLevelCost > earnedIncome) {
+      ns.print(`Upgrade will take ${ns.nFormat(upgradeLevelCost, "$0.0a")}.`);
+      ns.print(
+        `Only earn ${ns.nFormat(
+          earnedIncome,
+          "$0.0a"
+        )} in ${maxMinutesPerLevel}min.`
+      );
+      break;
+    }
 
     // loop through purchased servers and upgrade them to the provided amount of ram
-    let servers = ns.getPurchasedServers();
+    let startTime = Date.now();
     for (let i = 0; i < servers.length; i++) {
-      let s = servers[i];
+      const s = servers[i];
 
       // if already at current ram level, skip
       let sRam = ns.getServerMaxRam(s);
@@ -64,15 +78,6 @@ export async function main(ns) {
       ns.toast(`Upgraded ${s} to ${ram} RAM`, "info");
     }
     ns.print(`All servers up to ${ram} ram`);
-
-    // if it takes too long to upgrade, lets stop here
-    let endTime = Date.now();
-    if (endTime - startTime > maxMinutesPerLevel * 60 * 1000) {
-      ns.print(
-        `Took longer than ${maxMinutesPerLevel} minutes to upgrade to this level, stopping upgrades here.`
-      );
-      break;
-    }
 
     await ns.sleep(1);
   }

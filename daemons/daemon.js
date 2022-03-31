@@ -79,10 +79,10 @@ export async function main(ns) {
     "omega-net",
   ];
   let claimedServers = [];
-  let stats = getStats(ns, true, [...hackTargets]);
+  let stats = getStats(ns, true, ["home", ...hackTargets]);
   do {
     // update stats
-    stats = getStats(ns, true, [...hackTargets]);
+    stats = getStats(ns, true, ["home", ...hackTargets]);
 
     // read port 1 for global updates
     if (p1Handle.peek() !== "NULL PORT DATA") {
@@ -109,9 +109,10 @@ export async function main(ns) {
     // use pservs for hack daemon rather than basic hack
     if (
       flags.purchasedServers &&
-      flags.finishedDeploy &&
       flags.upgradedServers &&
-      hackTargets.length > 0
+      hackTargets.length > 0 &&
+      stats.servers["home"].maxRam - stats.servers["home"].ramUsed >
+        ns.getScriptRam("daemons/hack-daemon.js", "home")
     ) {
       const targetsStats = hackTargets.map((s) => stats.servers[s]);
       targetsStats.sort((a, b) => {

@@ -29,7 +29,13 @@ export async function main(ns) {
 
     // verify that server actually exists
     if (ns.serverExists(server) === false) {
-      // ns.tprint("Not a valid server: " + server);
+      ns.print("Not a valid server: " + server);
+      continue;
+    }
+
+    // if this is the home server, don't deploy
+    if (server === "home") {
+      ns.print("Skipping home server");
       continue;
     }
 
