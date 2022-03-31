@@ -7,6 +7,7 @@ const cities = [
   "Volhaven",
 ];
 
+/** @param {import("../.").NS} ns */
 export async function setJobs(ns, divName, jobCounts) {
   let success = true;
 

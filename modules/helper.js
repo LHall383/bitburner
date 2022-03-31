@@ -1,3 +1,4 @@
+/** @param {import("../.").NS} ns */
 export async function connectToSever(
   ns,
   end,
@@ -42,6 +43,7 @@ export async function connectToSever(
   return path;
 }
 
+/** @param {import("../.").NS} ns */
 export function getStats(ns, player = true, servers = []) {
   const stats = { player: undefined, servers: {} };
   if (player) {

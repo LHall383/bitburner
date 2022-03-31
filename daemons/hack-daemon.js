@@ -171,7 +171,7 @@ async function reduceToMinSecurity(ns, target, hosts, ramBudget, scripts) {
   printServerStats(ns, target);
 }
 
-/** @param {NS} ns */
+/** @param {import("../.").NS} ns */
 export async function main(ns) {
   let args = ns.flags([
     ["target", "joesguns"],

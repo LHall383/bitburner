@@ -5,7 +5,7 @@ const files = {
   grow: "/scripts/basic/grow.js",
 };
 
-/** @param {NS} ns */
+/** @param {import("../.").NS} ns */
 export async function main(ns) {
   // parse command line args
   const args = ns.flags([

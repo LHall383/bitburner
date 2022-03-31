@@ -43,7 +43,7 @@ function handleP1Message(ns, message) {
   }
 }
 
-/** @param {NS} ns */
+/** @param {import("../.").NS} ns */
 export async function main(ns) {
   // parse command line args
   const args = ns.flags([["loop", true]]);
